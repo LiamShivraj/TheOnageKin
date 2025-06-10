@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TheOnageKin - The Outside</title>
+  <style>
+    body {
+      margin: 0;
+      background: black;
+      overflow: hidden;
+      font-family: sans-serif;
+      color: white;
+    }
+    #gameCanvas {
+      display: block;
+      margin: 0 auto;
+      background: radial-gradient(circle, #111 0%, #000 100%);
+    }
+    #hud {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 10;
+    }
+    .btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid #444;
+      color: white;
+      padding: 10px;
+      margin: 5px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas" width="800" height="600"></canvas>
+  <div id="hud">
+    <div id="message">You are not alone… Prepare to run.</div>
+    <button class="btn" id="walkBtn">Walk</button>
+    <button class="btn" id="sprintBtn">Sprint</button>
+    <button class="btn" id="stunBtn">Stun</button>
+  </div>
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let player = { x: 400, y: 300, speed: 2, stamina: 100, canStun: true };
+    let killer = { x: 100, y: 100, speed: 1.5, stunned: false };
+    let keys = {};
+
+    let chasing = false;
+    let message = document.getElementById("message");
+    setTimeout(() => message.style.display = "none", 3000);
+
+    document.getElementById('walkBtn').ontouchstart = () => keys['walk'] = true;
+    document.getElementById('sprintBtn').ontouchstart = () => keys['sprint'] = true;
+    document.getElementById('stunBtn').ontouchstart = () => {
+      if (player.canStun) {
+        killer.stunned = true;
+        setTimeout(() => killer.stunned = false, 3000);
+        player.canStun = false;
+        setTimeout(() => player.canStun = true, 5000);
+      }
+    };
+
+    document.getElementById('walkBtn').ontouchend = () => keys['walk'] = false;
+    document.getElementById('sprintBtn').ontouchend = () => keys['sprint'] = false;
+
+    function update() {
+      if (keys['sprint'] && player.stamina > 0) {
+        player.speed = 4;
+        player.stamina -= 1;
+      } else {
+        player.speed = 2;
+        if (player.stamina < 100) player.stamina += 0.5;
+      }
+
+      // simple killer AI
+      if (!killer.stunned) {
+        let dx = player.x - killer.x;
+        let dy = player.y - killer.y;
+        let dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 400) chasing = true;
+        if (chasing) {
+          killer.x += dx / dist * killer.speed;
+          killer.y += dy / dist * killer.speed;
+        }
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // player
+      ctx.fillStyle = 'white';
+      ctx.fillRect(player.x - 10, player.y - 10, 20, 20);
+
+      // killer
+      ctx.fillStyle = killer.stunned ? 'gray' : 'red';
+      ctx.fillRect(killer.x - 10, killer.y - 10, 20, 20);
+
+      // stamina bar
+      ctx.fillStyle = 'green';
+      ctx.fillRect(10, canvas.height - 20, player.stamina * 2, 10);
+    }
+
+    function loop() {
+      update();
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    loop();
+  </script>
+</body>
+</html>
